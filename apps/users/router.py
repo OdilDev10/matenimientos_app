@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import List, Union
 from fastapi import APIRouter, Depends, Query, HTTPException
 from .controller import (
     all_users,
+    all_users_export,
     all_users_name_and_id,
     create_users,
     destroy_users,
@@ -25,6 +27,26 @@ def get_users(
 ):
     try:
         return all_users(current_page, page_size, search_term)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router_users.get(
+    "/users/export/{range_date_one}/{range_date_two}",
+    tags=["users".upper()],
+)
+def get_users_to_export(
+    range_date_one: datetime,
+    range_date_two: datetime,
+
+    # user: SchemaEntityusers = Depends(get_user_disabled_current),
+):
+    try:
+        return all_users_export(range_date_one, range_date_two)
     except Exception as error:
         raise HTTPException(
             status_code=500,

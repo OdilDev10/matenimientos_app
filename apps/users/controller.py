@@ -8,6 +8,10 @@ import re
 from utils.date_status import preprocess_data_create, preprocess_data_update
 from utils.convert_object_ids_to_strings import convert_object_ids_to_strings
 
+from fastapi.responses import FileResponse, JSONResponse
+import pandas as pd
+import tempfile
+
 def all_users(current_page, page_size, search_term):
     start = (current_page - 1) * page_size
     query = {}
@@ -27,9 +31,32 @@ def all_users(current_page, page_size, search_term):
         "page_size": page_size,
     }
 
+def all_users_export(rangue_date_one, range_date_two):
+    date_filter = {"created_at": {"$gte": rangue_date_one, "$lte": range_date_two}}
+    all_users = list(connection[DB_NAME].users.find(date_filter))
+
+    if len(all_users) > 0:
+        df = pd.DataFrame(convert_object_ids_to_strings(all_users))
+
+        # Crear un archivo Excel temporal
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            df.to_excel(temp, index=False)
+
+        # Enviar el archivo Excel al cliente
+        return FileResponse(
+            temp.name,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename="userss.xlsx",
+        )
+    return JSONResponse(
+        status_code=204,
+        content={"message": "No hay registros disponibles para exportar"},
+    )
+
+
 def all_users_name_and_id():
     all_users = list(connection[DB_NAME].users.find(
-        
+        {"deleted": {"$ne": True}},
          projection={
                 "created_at": False,
                 "updated_at": False,

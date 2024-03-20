@@ -1,8 +1,10 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, Query, HTTPException
 # from apps.auth.controller import get_user_disabled_current
 # from apps.users.schemas import SchemaEntityusers
 from .controller import (
     all_mantenimiento,
+    all_mantenimiento_export,
     create_mantenimiento,
     destroy_mantenimiento,
     find_one_mantenimiento,
@@ -32,6 +34,27 @@ def get_mantenimiento(
             detail=f"{error}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+@router_mantenimiento.get(
+    "/mantenimiento/export/{range_date_one}/{range_date_two}",
+    tags=["mantenimiento".upper()],
+)
+def get_mantenimiento_to_export(
+    range_date_one: datetime,
+    range_date_two: datetime,
+
+    # user: SchemaEntityusers = Depends(get_user_disabled_current),
+):
+    try:
+        return all_mantenimiento_export(range_date_one, range_date_two)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 
 
 @router_mantenimiento.post("/mantenimiento", tags=["mantenimiento".upper()])

@@ -7,7 +7,9 @@ import re
 from utils.date_status import preprocess_data_create, preprocess_data_update
 from utils.globalserializer import gobal_serializer
 from utils.convert_object_ids_to_strings import convert_object_ids_to_strings
-
+from fastapi.responses import FileResponse, JSONResponse
+import pandas as pd
+import tempfile
 
 pipeline = [
     {
@@ -60,6 +62,29 @@ def all_mantenimiento(current_page, page_size, search_term):
     }
 
 
+def all_mantenimiento_export(rangue_date_one, range_date_two):
+    date_filter = {"created_at": {"$gte": rangue_date_one, "$lte": range_date_two}}
+    all_mantenimiento = list(connection[DB_NAME].mantenimiento.find(date_filter))
+
+    if len(all_mantenimiento) > 0:
+        df = pd.DataFrame(convert_object_ids_to_strings(all_mantenimiento))
+
+        # Crear un archivo Excel temporal
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            df.to_excel(temp, index=False)
+
+        # Enviar el archivo Excel al cliente
+        return FileResponse(
+            temp.name,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename="mantenimientos.xlsx",
+        )
+    return JSONResponse(
+        status_code=204,
+        content={"message": "No hay registros disponibles para exportar"},
+    )
+
+
 def find_one_mantenimiento(id: str | int):
     mantenimiento = connection[DB_NAME].mantenimiento.find_one({"_id": ObjectId(id)})
 
@@ -99,10 +124,9 @@ def create_mantenimiento(mantenimiento):
 def update_mantenimiento(id: int, mantenimiento):
     new_mantenimiento = preprocess_data_update(dict(mantenimiento))
 
-    new_mantenimiento['user_id'] = ObjectId(new_mantenimiento['user_id'])
-    new_mantenimiento['computer_id'] = ObjectId(new_mantenimiento['computer_id'])
+    new_mantenimiento["user_id"] = ObjectId(new_mantenimiento["user_id"])
+    new_mantenimiento["computer_id"] = ObjectId(new_mantenimiento["computer_id"])
 
-    
     connection[DB_NAME].mantenimiento.find_one_and_update(
         {"_id": ObjectId(id)}, {"$set": new_mantenimiento}
     )

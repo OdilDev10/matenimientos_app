@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Union
 from fastapi import APIRouter, Depends, Query, HTTPException
 
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 # from apps.users.schemas import SchemaEntityusers
 from .controller import (
     all_computers,
+    all_computers_export,
     all_computers_name_and_id,
     create_computers,
     destroy_computers,
@@ -29,6 +31,26 @@ def get_computers(
 ):
     try:
         return all_computers(current_page, page_size, search_term)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router_computers.get(
+    "/computers/export/{range_date_one}/{range_date_two}",
+    tags=["computers".upper()],
+)
+def get_computers_to_export(
+    range_date_one: datetime,
+    range_date_two: datetime,
+
+    # user: SchemaEntityusers = Depends(get_user_disabled_current),
+):
+    try:
+        return all_computers_export(range_date_one, range_date_two)
     except Exception as error:
         raise HTTPException(
             status_code=500,
