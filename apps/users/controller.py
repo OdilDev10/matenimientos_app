@@ -1,4 +1,8 @@
 from datetime import datetime
+from typing import Optional
+
+from .models import Roles, users_Model
+from .dto.create_user import UserCreate, UserInDB, create_jwt_token, hash_password, verify_password
 from config.db_config_nosql import connection
 from config.config import DB_NAME
 from fastapi import HTTPException
@@ -7,12 +11,62 @@ import re
 
 from utils.date_status import preprocess_data_create, preprocess_data_update
 from utils.convert_object_ids_to_strings import convert_object_ids_to_strings
-
 from fastapi.responses import FileResponse, JSONResponse
 import pandas as pd
 import tempfile
 
-def all_users(current_page, page_size, search_term):
+# AUTH
+
+
+def create_users_register(users):
+    user = preprocess_data_create(dict(users))
+    print(user)
+    try:
+        # Verificar si el usuario ya existe
+        existing_user = connection[DB_NAME].users.find_one({"email": user["email"]})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        hashed_password = hash_password(user["password"])
+        user["password"] = hashed_password
+        connection[DB_NAME].users.insert_one(user)
+        return {"msg": "User registered successfully"}
+    except Exception as error:
+        raise HTTPException(
+            status_code=401,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def users_login(email: str, password: str):
+    try:
+        existing_user = connection[DB_NAME].users.find_one({"email": email})
+        if not existing_user:
+            raise HTTPException(status_code=400, detail="Usuario no existe")
+
+        if not verify_password(password, existing_user["password"]):
+            raise HTTPException(status_code=400, detail="Contraseña incorrecta")
+
+        token = create_jwt_token(email)
+        return {"message": "User login successfully", "token": token, 'user': convert_object_ids_to_strings(existing_user)}
+    except Exception as error:
+        raise HTTPException(
+            status_code=401,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+# CRUD
+
+
+def all_users(
+    current_page: int, 
+    page_size: int, 
+    search_term: Optional[str], 
+    role: Optional[Roles]
+):
     start = (current_page - 1) * page_size
     query = {}
 
@@ -20,11 +74,15 @@ def all_users(current_page, page_size, search_term):
         search_regex = re.escape(search_term)
         query["$or"] = [
             {"nombre": {"$regex": search_regex, "$options": "i"}},
-            {"apellido": {"$regex": search_regex, "$options": "i"}}
+            {"apellido": {"$regex": search_regex, "$options": "i"}},
         ]
+
+    if role:
+        query["role"] = role.value  # Filtra por rol
 
     all_users = list(connection[DB_NAME].users.find(query).skip(start).limit(page_size))
     all_users_serialized = convert_object_ids_to_strings(all_users)
+    
     return {
         "data": all_users_serialized,
         "current_page": current_page,
@@ -55,16 +113,18 @@ def all_users_export(rangue_date_one, range_date_two):
 
 
 def all_users_name_and_id():
-    all_users = list(connection[DB_NAME].users.find(
-        {"deleted": {"$ne": True}},
-         projection={
+    all_users = list(
+        connection[DB_NAME].users.find(
+            {"deleted": {"$ne": True}},
+            projection={
                 "created_at": False,
                 "updated_at": False,
                 "deleted_at": False,
                 "id": False,
-                "deleted": False
+                "deleted": False,
             },
-    ))
+        )
+    )
     return convert_object_ids_to_strings(all_users)
 
 

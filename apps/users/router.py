@@ -1,19 +1,58 @@
 from datetime import datetime
 from typing import List, Union
 from fastapi import APIRouter, Depends, Query, HTTPException
+
+from apps.users.dto.create_user import LoginRequest, RegisterRequest
+
 from .controller import (
     all_users,
     all_users_export,
     all_users_name_and_id,
     create_users,
+    create_users_register,
     destroy_users,
     find_one_users,
     reactive_user,
     update_users,
+    users_login,
 )
 from .models import users_Model
 
 router_users = APIRouter()
+
+
+# AUTH
+
+
+@router_users.post("/users/auth/register", tags=["auth".upper()])
+def post_users_register(
+    users: RegisterRequest,
+):
+    try:
+        return create_users_register(users)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router_users.post("/users/auth/login", tags=["auth".upper()])
+def post_users_login(
+    body: LoginRequest
+):
+    try:
+        return users_login(body.email, body.password)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+# CRUD
 
 
 @router_users.get(
@@ -42,7 +81,6 @@ def get_users(
 def get_users_to_export(
     range_date_one: datetime,
     range_date_two: datetime,
-
     # user: SchemaEntityusers = Depends(get_user_disabled_current),
 ):
     try:
@@ -112,7 +150,6 @@ def put_users(
             detail=f"{error}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
 
 
 @router_users.put("/users_active/{id}", tags=["users".upper()])
