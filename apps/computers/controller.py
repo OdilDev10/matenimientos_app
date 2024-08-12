@@ -18,12 +18,12 @@ pipeline = [
     {
         "$lookup": {
             "from": "users",
-            "localField": "user_id",
+            "localField": "client_id",
             "foreignField": "_id",
             "as": "user",
         },
     },
-    {"$unset": "user_id"},
+    {"$unset": "client_id"},
 ]
 
 
@@ -34,7 +34,6 @@ def all_computers(
         pagination=pagination,
         collection_name="computers",
         search_fields=[
-            "departamento",
             "codigo",
             "serie",
             "marca",
@@ -76,8 +75,8 @@ def find_one_computers(id: str | int):
 def create_computers(computers):
     new_computers = preprocess_data_create(dict(computers))
 
-    if new_computers["user_id"]:
-        new_computers["user_id"] = ObjectId(new_computers["user_id"])
+    if new_computers["client_id"]:
+        new_computers["client_id"] = ObjectId(new_computers["client_id"])
 
     return create_one_record(collection_name="computers", data=new_computers)
 
@@ -85,8 +84,8 @@ def create_computers(computers):
 def update_computers(id: int, computers):
     new_computers = preprocess_data_update(dict(computers))
 
-    if new_computers["user_id"]:
-        new_computers["user_id"] = ObjectId(new_computers["user_id"])
+    if new_computers["client_id"]:
+        new_computers["client_id"] = ObjectId(new_computers["client_id"])
     return update_one_record("computers", new_computers, id)
 
 
