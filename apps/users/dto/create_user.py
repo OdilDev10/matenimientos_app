@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from fastapi import HTTPException
 import jwt
 from pydantic import BaseModel
 from passlib.context import CryptContext
@@ -51,3 +52,17 @@ def create_jwt_token(email: str):
         {"sub": email, "exp": expiration}, SECRET_KEY, algorithm=ALGORITHM
     )
     return token
+
+def decode_jwt_token(token: str):
+    # try:
+    # Decodifica el token
+    decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    # Extrae el email o el ID de usuario del payload
+    print(decoded_token, 'AQUI')
+    return 'NA'
+    # return decoded_token
+    # except jwt.ExpiredSignatureError:
+    #     raise HTTPException(status_code=401, detail="Token has expired")
+    # except jwt.InvalidTokenError:
+    #     raise HTTPException(status_code=401, detail="Invalid token")
+    

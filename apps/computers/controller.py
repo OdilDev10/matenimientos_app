@@ -20,6 +20,14 @@ pipeline = [
             "from": "users",
             "localField": "client_id",
             "foreignField": "_id",
+            "as": "client",
+        },
+    },
+       {
+        "$lookup": {
+            "from": "users",
+            "localField": "user_id",
+            "foreignField": "_id",
             "as": "user",
         },
     },

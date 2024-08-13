@@ -106,20 +106,30 @@ def find_one_mantenimiento(id: str | int):
 def create_mantenimiento(mantenimiento):
     new_mantenimiento = preprocess_data_create(dict(mantenimiento))
 
+    # Asegúrate de que los IDs sean ObjectId
     new_mantenimiento["computer_id"] = ObjectId(new_mantenimiento["computer_id"])
     new_mantenimiento["user_id"] = ObjectId(new_mantenimiento["user_id"])
 
     try:
+        # Inserta el nuevo mantenimiento en la colección 'mantenimiento'
         id = connection[DB_NAME].mantenimiento.insert_one(new_mantenimiento).inserted_id
         created_mantenimiento = connection[DB_NAME].mantenimiento.find_one({"_id": id})
+
+        # Actualiza el campo 'user_id' en la colección 'computers'
+        connection[DB_NAME].computers.find_one_and_update(
+            {"_id": new_mantenimiento["computer_id"]},
+            {"$set": {"user_id": new_mantenimiento["user_id"]}},
+        )
+
+        # Devuelve el mantenimiento creado, con los IDs convertidos a strings
         return convert_object_ids_to_strings(created_mantenimiento)
     except Exception as error:
+        # Manejo de errores
         raise HTTPException(
             status_code=401,
             detail=f"{error}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
 
 def update_mantenimiento(id: int, mantenimiento):
     new_mantenimiento = preprocess_data_update(dict(mantenimiento))

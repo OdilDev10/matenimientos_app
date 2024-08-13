@@ -3,7 +3,6 @@ from datetime import datetime
 
 
 def preprocess_data_create(data):
-    del data["id"]
     data["created_at"] = datetime.now()
     data["updated_at"] = datetime.now()
     data["deleted_at"] = None

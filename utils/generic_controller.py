@@ -113,8 +113,9 @@ def find_one_register(collection_name: str, id: str | int):
 def create_one_record(collection_name: str, data):
     try:
         id = connection[DB_NAME][collection_name].insert_one(data).inserted_id
-        return find_one_register(id=id)
+        return find_one_register(collection_name, id=id)
     except Exception as error:
+        print(error)
         response_error(error, "Create computer")
 
 

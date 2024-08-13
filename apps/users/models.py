@@ -16,7 +16,7 @@ class Role(str, Enum):
     ADMIN = "admin"
 
 
-classC(BaseModel):
+class users_Model(BaseModel):
     id: Union[str, int, None] = None
     name: str
     last_name: str

@@ -32,27 +32,28 @@ class Marca_procesador(str, Enum):
 
 class computers_Model(BaseModel):
     id: Union[str, int, None] = None
-    departamento: str
-    codigo: str
+    # departamento: str
+    # codigo: str
     serie: str
     capacidad_disco: str
     memoria_ram: str
-    soporte_max_ram: str
-    tarjetas: int
-    slots: int
-    slots_dispositivos: int
+    soporte_max_ram: Union[str, int, None] = None
+    tarjetas: Union[str, int, None] = None
+    slots: Union[str, int, None] = None
+    slots_dispositivos: Union[str, int, None] = None
     slots_ocupados: int
-    client_id: Union[str, int, None] = None
+    client_id: Union[str, int, int, None] = None
+    user_id: Union[str, int, int, None] = None
 
     fecha_asignacion_usuario: str
     description: str
     estado: Estado = Field(..., description="Computer status")
-    marca: Marca = Field(..., description="Marca de el equipo")
+    marca: str
     modelo: str
-    office_version: str
-    year_lanzamiento: str
-    generacion: str
-    tipo_perfil: Tipo_perfil = Field(..., description="Oficina usuario")
+    office_version: Union[str, int, None] = None
+    year_lanzamiento: Union[str, int, None] = None
+    generacion: Union[str, int, None] = None
+    # tipo_perfil: Tipo_perfil = Field(..., description="Oficina usuario")
     ghz_procesador: str
     marca_procesador: Marca_procesador = Field(..., description="Marca procesador")
     generacion_procesador: str

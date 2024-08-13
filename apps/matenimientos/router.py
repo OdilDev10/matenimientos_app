@@ -1,5 +1,7 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
+
+from apps.users.dto.create_user import decode_jwt_token
 # from apps.auth.controller import get_user_disabled_current
 # from apps.users.schemas import SchemaEntityusers
 from .controller import (
@@ -21,11 +23,16 @@ router_mantenimiento = APIRouter()
     tags=["mantenimiento".upper()],
 )
 def get_mantenimiento(
+    request: Request,
     current_page: int = Query(1, description="Número de página", ge=1),
     page_size: int = Query(10, description="Resultados por página", le=1000),
     search_term: str = Query("", description="Término de búsqueda"),
     # user: SchemaEntityusers = Depends(get_user_disabled_current),
 ):
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        print(decode_jwt_token(auth_header))
+
     try:
         return all_mantenimiento(current_page, page_size, search_term)
     except Exception as error:

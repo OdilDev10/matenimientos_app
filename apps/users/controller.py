@@ -1,21 +1,24 @@
 from datetime import datetime
 from typing import Optional
-
+from apps.dtos.pagination_dto import GetComputersDTO
 from .models import Roles, users_Model
-from .dto.create_user import UserCreate, UserInDB, create_jwt_token, hash_password, verify_password
-from dtos.pagination_dto import GetComputersDTO
+from .dto.create_user import (
+    UserCreate,
+    UserInDB,
+    create_jwt_token,
+    hash_password,
+    verify_password,
+)
 from config.db_config_nosql import connection
 from config.config import DB_NAME
 from fastapi import HTTPException
 from bson import ObjectId
 import re
-
 from utils.date_status import preprocess_data_create, preprocess_data_update
 from utils.convert_object_ids_to_strings import convert_object_ids_to_strings
 from fastapi.responses import FileResponse, JSONResponse
 import pandas as pd
 import tempfile
-
 from utils.generic_controller import get_all
 
 # # AUTH
@@ -23,7 +26,6 @@ from utils.generic_controller import get_all
 
 def create_users_register(users):
     user = preprocess_data_create(dict(users))
-    print(user)
     try:
         # Verificar si el usuario ya existe
         existing_user = connection[DB_NAME].users.find_one({"email": user["email"]})
@@ -52,7 +54,11 @@ def users_login(email: str, password: str):
             raise HTTPException(status_code=400, detail="Contraseña incorrecta")
 
         token = create_jwt_token(email)
-        return {"message": "User login successfully", "token": token, 'user': convert_object_ids_to_strings(existing_user)}
+        return {
+            "message": "User login successfully",
+            "token": token,
+            "user": convert_object_ids_to_strings(existing_user),
+        }
     except Exception as error:
         raise HTTPException(
             status_code=401,
@@ -64,42 +70,11 @@ def users_login(email: str, password: str):
 # CRUD
 
 
-def all_users(
-    current_page: int, 
-    page_size: int, 
-    search_term: Optional[str], 
-    role: Optional[Roles]
-):
-    # start = (current_page - 1) * page_size
-    # query = {}
-
-    # if search_term:
-    #     search_regex = re.escape(search_term)
-    #     query["$or"] = [
-    #         {"nombre": {"$regex": search_regex, "$options": "i"}},
-    #         {"apellido": {"$regex": search_regex, "$options": "i"}},
-    #     ]
-
-    if role:
-        query["role"] = role.value  # Filtra por rol
-
-    # all_users = list(connection[DB_NAME].users.find(query).skip(start).limit(page_size))
-    # all_users_serialized = convert_object_ids_to_strings(all_users)
-    
-    # return {
-    #     "data": all_users_serialized,
-    #     "current_page": current_page,
-    #     "page_size": page_size,
-    # }
-
-pipeline = [
-  
-    {"$unset": "client_id"},
-]
-
-def all_users(
+def all_clients(
     pagination: GetComputersDTO,
 ):
+    pipeline = [{"$match": {"role": "client"}}]
+
     return get_all(
         pagination=pagination,
         collection_name="users",
@@ -112,6 +87,26 @@ def all_users(
         ],
         pipeline=pipeline,
     )
+
+
+def all_users(
+    pagination: GetComputersDTO,
+):
+    pipeline = [{"$match": {"role": "admin"}}]
+
+    return get_all(
+        pagination=pagination,
+        collection_name="users",
+        search_fields=[
+            "codigo",
+            "serie",
+            "marca",
+            "modelo",
+            "user.nombre",
+        ],
+        pipeline=pipeline,
+    )
+
 
 def all_users_export(rangue_date_one, range_date_two):
     date_filter = {"created_at": {"$gte": rangue_date_one, "$lte": range_date_two}}
@@ -139,7 +134,23 @@ def all_users_export(rangue_date_one, range_date_two):
 def all_users_name_and_id():
     all_users = list(
         connection[DB_NAME].users.find(
-            {"deleted": {"$ne": True}},
+            {"role": "admin", "deleted": {"$ne": True}},
+            projection={
+                "created_at": False,
+                "updated_at": False,
+                "deleted_at": False,
+                "id": False,
+                "deleted": False,
+            },
+        )
+    )
+    return convert_object_ids_to_strings(all_users)
+
+
+def all_users_client_name_and_id():
+    all_users = list(
+        connection[DB_NAME].users.find(
+            {"role": "client", "deleted": {"$ne": True}},
             projection={
                 "created_at": False,
                 "updated_at": False,

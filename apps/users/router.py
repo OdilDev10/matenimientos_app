@@ -2,10 +2,13 @@ from datetime import datetime
 from typing import List, Union
 from fastapi import APIRouter, Depends, Query, HTTPException
 
+from apps.dtos.pagination_dto import GetComputersDTO
 from apps.users.dto.create_user import LoginRequest, RegisterRequest
 
 from .controller import (
+    all_clients,
     all_users,
+    all_users_client_name_and_id,
     all_users_export,
     all_users_name_and_id,
     create_users,
@@ -39,9 +42,7 @@ def post_users_register(
 
 
 @router_users.post("/users/auth/login", tags=["auth".upper()])
-def post_users_login(
-    body: LoginRequest
-):
+def post_users_login(body: LoginRequest):
     try:
         return users_login(body.email, body.password)
     except Exception as error:
@@ -60,12 +61,27 @@ def post_users_login(
     tags=["users".upper()],
 )
 def get_users(
-    current_page: int = Query(1, description="Número de página", ge=1),
-    page_size: int = Query(10, description="Resultados por página", le=1000),
-    search_term: str = Query("", description="Término de búsqueda"),
+    params: GetComputersDTO = Depends(),
 ):
     try:
-        return all_users(current_page, page_size, search_term)
+        return all_users(params)
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router_users.get(
+    "/users/clients",
+    tags=["users".upper()],
+)
+def get_users(
+    params: GetComputersDTO = Depends(),
+):
+    try:
+        return all_clients(params)
     except Exception as error:
         raise HTTPException(
             status_code=500,
@@ -106,6 +122,22 @@ def get_users():
             detail=f"{error}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+@router_users.get(
+    "/clients_name_id",
+    tags=["users".upper()],
+)
+def get_users():
+    try:
+        return all_users_client_name_and_id()
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{error}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 
 
 @router_users.post("/users", tags=["users".upper()])

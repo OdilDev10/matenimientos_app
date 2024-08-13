@@ -96,7 +96,8 @@ class ComputersRouter:
         except Exception as error:
             response_error(error, "Router computers")
 
-    async def post_computers(self, computers: CreateComputerDTO = Depends()):
+    # async def post_computers(self, computers: CreateComputerDTO = Depends()):
+    async def post_computers(self, computers: computers_Model):
         try:
             return create_computers(computers)
         except Exception as error:
