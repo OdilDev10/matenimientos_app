@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from apps.computers.dto.create_dto import CreateComputerDTO
 from apps.dtos.pagination_dto import GetComputersDTO
 from utils import response_error
@@ -12,6 +12,7 @@ from .controller import (
     all_computers_name_and_id,
     create_computers,
     destroy_computers,
+    find_computers_by_client_id,
     find_one_computers,
     reactive_computer,
     update_computers,
@@ -26,6 +27,12 @@ class ComputersRouter:
         self.router.add_api_route(
             "/computers",
             self.get_computers,
+            methods=["GET"],
+            tags=["computers".upper()],
+        )
+        self.router.add_api_route(
+            "/computers_by_client",
+            self.get_computers_by_client,
             methods=["GET"],
             tags=["computers".upper()],
         )
@@ -77,8 +84,17 @@ class ComputersRouter:
         params: GetComputersDTO = Depends(),
     ):
         try:
-            print("LLEGO")
             return all_computers(params)
+        except Exception as error:
+            response_error(error, "Router computers")
+
+    async def get_computers_by_client(
+        self,
+        params: GetComputersDTO = Depends(),
+        idUser: str = Query("", description="Id cliente"),
+    ):
+        try:
+            return find_computers_by_client_id(params, idUser)
         except Exception as error:
             response_error(error, "Router computers")
 

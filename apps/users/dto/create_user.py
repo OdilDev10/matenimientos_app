@@ -1,11 +1,12 @@
+import jwt
 from datetime import datetime, timedelta
 from fastapi import HTTPException
-import jwt
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from apps.users.models import Roles
+from config.config import PWD_CONTEXT
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"
 
@@ -39,11 +40,11 @@ class RegisterRequest(BaseModel):
 
 # Funciones auxiliares
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return PWD_CONTEXT.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    return PWD_CONTEXT.verify(plain_password, hashed_password)
 
 
 def create_jwt_token(email: str):
@@ -57,12 +58,8 @@ def decode_jwt_token(token: str):
     # try:
     # Decodifica el token
     decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    # Extrae el email o el ID de usuario del payload
-    print(decoded_token, 'AQUI')
-    return 'NA'
-    # return decoded_token
+    return decoded_token
     # except jwt.ExpiredSignatureError:
     #     raise HTTPException(status_code=401, detail="Token has expired")
     # except jwt.InvalidTokenError:
     #     raise HTTPException(status_code=401, detail="Invalid token")
-    

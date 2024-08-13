@@ -79,11 +79,8 @@ def all_clients(
         pagination=pagination,
         collection_name="users",
         search_fields=[
-            "codigo",
-            "serie",
-            "marca",
-            "modelo",
-            "user.nombre",
+            "name",
+            "last_name",
         ],
         pipeline=pipeline,
     )
@@ -98,11 +95,8 @@ def all_users(
         pagination=pagination,
         collection_name="users",
         search_fields=[
-            "codigo",
-            "serie",
-            "marca",
-            "modelo",
-            "user.nombre",
+            "name",
+            "last_name",
         ],
         pipeline=pipeline,
     )

@@ -1,3 +1,6 @@
+import tempfile
+from fastapi.responses import FileResponse, JSONResponse
+import pandas as pd
 from apps.dtos.pagination_dto import GetComputersDTO
 from config.db_config_nosql import connection
 from config.config import DB_NAME
@@ -23,7 +26,7 @@ pipeline = [
             "as": "client",
         },
     },
-       {
+    {
         "$lookup": {
             "from": "users",
             "localField": "user_id",
@@ -42,24 +45,63 @@ def all_computers(
         pagination=pagination,
         collection_name="computers",
         search_fields=[
-            "codigo",
             "serie",
             "marca",
             "modelo",
-            "user.nombre",
+            "user.name",
+            "client.name",
         ],
         pipeline=pipeline,
     )
 
 
-def all_computers_export(rangue_date_one, range_date_two):
-    print('LLEGO')
-    return all_data_export(
+def find_computers_by_client_id(pagination: GetComputersDTO, client_id):
+    local_pipeline = [
+        {"$match": {"client_id": ObjectId(client_id)}},
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "user_id",
+                "foreignField": "_id",
+                "as": "user",
+            },
+        },
+    ]
+    return get_all(
+        pagination=pagination,
         collection_name="computers",
-        rangue_date_one=rangue_date_one,
-        range_date_two=range_date_two,
+        search_fields=[
+            "codigo",
+            "serie",
+            "marca",
+            "modelo",
+            "user.name",
+        ],
+        pipeline=local_pipeline,
     )
 
+
+def all_computers_export(rangue_date_one, range_date_two):
+    date_filter = {"created_at": {"$gte": rangue_date_one, "$lte": range_date_two}}
+    all_computers = list(connection[DB_NAME].computers.find(date_filter))
+
+    if len(all_computers) > 0:
+        df = pd.DataFrame(convert_object_ids_to_strings(all_computers))
+
+        # Crear un archivo Excel temporal
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            df.to_excel(temp, index=False)
+
+        # Enviar el archivo Excel al cliente
+        return FileResponse(
+            temp.name,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename="computers.xlsx",
+        )
+    return JSONResponse(
+        status_code=204,
+        content={"message": "No hay registros disponibles para exportar"},
+    )
 
 def all_computers_name_and_id():
     all_computers = list(

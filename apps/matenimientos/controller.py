@@ -1,10 +1,12 @@
 from datetime import datetime
+from apps.dtos.pagination_dto import GetComputersDTO
 from config.db_config_nosql import connection
 from config.config import DB_NAME
 from fastapi import HTTPException
 from bson import ObjectId
 import re
 from utils.date_status import preprocess_data_create, preprocess_data_update
+from utils.generic_controller import get_all
 from utils.globalserializer import gobal_serializer
 from utils.convert_object_ids_to_strings import convert_object_ids_to_strings
 from fastapi.responses import FileResponse, JSONResponse
@@ -33,7 +35,7 @@ pipeline = [
 ]
 
 
-def all_mantenimiento(current_page, page_size, search_term):
+def all_mantenimiento(current_page, page_size, search_term, idUser):
     start = (current_page - 1) * page_size
     query = {}
 
@@ -41,9 +43,15 @@ def all_mantenimiento(current_page, page_size, search_term):
         search_regex = re.escape(search_term)
         query["$or"] = [
             {"descripcion_mantenimiento": {"$regex": search_regex, "$options": "i"}},
-            {"user.nombre": {"$regex": search_regex, "$options": "i"}},
-            {"computer.codigo": {"$regex": search_regex, "$options": "i"}},
+            {"user.name": {"$regex": search_regex, "$options": "i"}},
+            {"deleted": {"$regex": search_regex, "$options": "i"}},
+            {"computer.marca": {"$regex": search_regex, "$options": "i"}},
+            {"computer.modelo": {"$regex": search_regex, "$options": "i"}},
         ]
+
+    if idUser:
+        user = connection[DB_NAME].user.find({"_id": idUser})
+        query["computer_id"] = idUser
 
     pipeline_extended = pipeline + [
         {"$match": query},
@@ -60,6 +68,33 @@ def all_mantenimiento(current_page, page_size, search_term):
         "current_page": current_page,
         "page_size": page_size,
     }
+
+
+def find_maintenance_by_client_id(pagination: GetComputersDTO, client_id):
+    def find_computers_by_client_id(client_id):
+        computers = list(
+            connection[DB_NAME].computers.find(
+                {"client_id": ObjectId(client_id)}, {"_id": 1}
+            )
+        )
+        return [computer["_id"] for computer in computers]
+
+    computer_ids = find_computers_by_client_id(client_id=client_id)
+    print(computer_ids, "computer_ids")
+    local_pipeline = [
+        {"$match": {"computer_id": {"$in": computer_ids}}},
+    ]
+    return get_all(
+        pagination=pagination,
+        collection_name="mantenimiento",
+        search_fields=[
+            "descripcion_mantenimiento",
+            "user.name",
+            "computer.marca",
+            "computer.modelo",
+        ],
+        pipeline=local_pipeline,
+    )
 
 
 def all_mantenimiento_export(rangue_date_one, range_date_two):
@@ -130,6 +165,7 @@ def create_mantenimiento(mantenimiento):
             detail=f"{error}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
 
 def update_mantenimiento(id: int, mantenimiento):
     new_mantenimiento = preprocess_data_update(dict(mantenimiento))
