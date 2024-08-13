@@ -42,7 +42,8 @@ class computers_Model(BaseModel):
     slots: int
     slots_dispositivos: int
     slots_ocupados: int
-    user_id: Union[str, int, None] = None
+    client_id: Union[str, int, None] = None
+
     fecha_asignacion_usuario: str
     description: str
     estado: Estado = Field(..., description="Computer status")

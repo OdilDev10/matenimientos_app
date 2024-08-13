@@ -3,7 +3,8 @@ import os
 from passlib.context import CryptContext
 
 load_dotenv()
-DEBUG = os.getenv("DEBUG")
+# DEBUG = os.getenv("DEBUG")
+DEBUG = True
 print("---DEBUG: ", DEBUG)
 
 if DEBUG == "True":
